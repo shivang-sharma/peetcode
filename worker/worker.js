@@ -1,8 +1,12 @@
 const amqp = require("amqplib");
 const { exec } = require("child_process");
-const e = require("express");
 const fs = require("fs");
-const { stderr } = require("process");
+const fsPromise = fs.promises;
+
+/**
+ * class Consumer
+ * Description: Consumer to consume jobs from the rabbit  queue
+ */
 class Consumer {
   #queueName;
   #connection;
@@ -50,71 +54,93 @@ class Consumer {
       this.#channel.close();
       this.#connection.close();
     } catch (e) {
-      console.log(`Error occured while publisher shutdown : ${e}`);
+      console.log(`Error occured while shutting down publisher : ${e}`);
     }
   }
 }
+
 /**
  *
  * @param {*} job
  */
-function jobHandler(job) {
+async function jobHandler(job) {
   const submissionId = job.submissionId;
   const languageId = job.languageId;
   const problemId = job.problemId;
   const submission = job.submission;
+  const extension = retrieveExtension(languageId);
+  const sandbox = retrieveSandbox(languageId);
   let directoryName = submissionId;
-  let sourceCodeFile = `Submission.${retrieveExtension(languageId)}`;
+  let sourceCodeFile = `Submission.${extension}`;
   let testDataFile = `testData.txt`;
   let submissionDir = __dirname + "/sandbox/temp/" + directoryName;
   let sourceCodeDir = submissionDir + "/source-code/";
   let resultDir = submissionDir + "/result/";
   let testDataDir = __dirname + `/sandbox/temp/testData/${problemId}/`;
-  generateSubmissionFile(sourceCodeDir, sourceCodeFile, submission);
-  generateTestDataFile(problemId, testDataDir, testDataFile);
-  triggerJob(submissionDir, testDataDir);
-}
-function triggerJob(submissionDir, testDataDir) {
-  exec(
-    __dirname + `/sandbox/trigger.sh ${submissionDir} ${testDataDir}`,
-    (error, stdout, stderr) => {
-      if (error) {
-        console.log(stderr.toString());
-      }
-      console.log(stdout);
-    }
+  await generateSubmissionFile(sourceCodeDir, sourceCodeFile, submission);
+  const timeoutForProblem = await generateTestDataFile(
+    problemId,
+    testDataDir,
+    testDataFile
   );
+  console.log("Line 86 ", timeoutForProblem, typeof timeoutForProblem);
+  triggerJob(
+    submissionDir,
+    testDataDir,
+    submissionId,
+    timeoutForProblem / 1000,
+    sandbox
+  );
+}
+/**
+ *
+ * @param {*} submissionDir
+ * @param {*} testDataDir
+ * @param {*} submissionId
+ * @param {*} timeout
+ * @param {*} sandbox
+ */
+function triggerJob(
+  submissionDir,
+  testDataDir,
+  submissionId,
+  timeout,
+  sandbox
+) {
+  const cmd =
+    __dirname +
+    `/sandbox/trigger.sh ${submissionDir} ${testDataDir} ${submissionId} ${timeout} ${sandbox}| tee ${submissionDir}/output.${submissionId}`;
+  exec(cmd);
 }
 /**
  *
  * @param {*} problemId
  * @param {*} testDataDir
  */
-function generateTestDataFile(problemId, testDataDir, testDataFile) {
-  fs.mkdir(testDataDir, { recursive: true }, (err, path) => {
-    if (err) {
-      throw err;
-    }
+async function generateTestDataFile(problemId, testDataDir, testDataFile) {
+  try {
+    await fsPromise.mkdir(testDataDir, { recursive: true });
     console.log(`Directory created for ProblemId: ${testDataDir}`);
     if (!fs.existsSync(testDataDir + testDataFile)) {
       const testData = retrieveTestData(problemId);
-      fs.open(testDataDir + testDataFile, "w", (err, file) => {
-        if (err) {
-          throw err;
-        }
-        fs.write(file, JSON.stringify(testData), (err, writen, str) => {
-          if (err) {
-            throw err;
-          }
+      let timeout = Number.parseInt(testData.timeout);
+      const fileHandler = await fsPromise.open(testDataDir + testDataFile, "w");
+      let data;
+      for (let test in testData.testCase) {
+        data = `${test}\n${testData.testCase[test]}\n`;
+        fsPromise.writeFile(fileHandler, data).then((value) => {
           console.log(
-            `Test Data ${str} for ${problemId}  is written ${writen} to ${
-              testDataDir + testDataFile
-            }`
+            `Test Data ${data} is written to ${testDataDir + testDataFile}`
           );
         });
-      });
+      }
+      await fileHandler.close();
+      return timeout;
     }
-  });
+    return retrieveTimeoutForProblem(problemId);
+  } catch (error) {
+    throw error;
+  }
 }
 /**
  *
@@ -122,22 +148,30 @@ function generateTestDataFile(problemId, testDataDir, testDataFile) {
  * @param {*} sourceCodeFile
  * @param {*} submission
  */
-function generateSubmissionFile(sourceCodeDir, sourceCodeFile, submission) {
-  fs.mkdir(sourceCodeDir, { recursive: true }, (err, path) => {
-    if (err) {
-      throw err;
-    }
+async function generateSubmissionFile(
+  sourceCodeDir,
+  sourceCodeFile,
+  submission
+) {
+  try {
+    await fsPromise.mkdir(sourceCodeDir, { recursive: true });
     console.log(`Directory created for SubmissionId: ${sourceCodeDir}`);
-    fs.writeFile(sourceCodeDir + sourceCodeFile, submission, "utf-8", () => {
-      console.log(
-        `Submission code written to ${sourceCodeDir + sourceCodeFile}`
-      );
-    });
-  });
+    await fsPromise.writeFile(
+      sourceCodeDir + sourceCodeFile,
+      submission,
+      "utf-8"
+    );
+    console.log(`Submission code written to ${sourceCodeDir + sourceCodeFile}`);
+  } catch (error) {
+    throw error;
+  }
 }
+
 function retrieveTimeoutForProblem(problemId) {
-  const timeouts = { P101: 30000, P102: 45000 };
-  return;
+  const timeouts = {
+    P101: 11000,
+  };
+  return timeouts[problemId];
 }
 /**
  *
@@ -146,9 +180,12 @@ function retrieveTimeoutForProblem(problemId) {
  */
 function retrieveTestData(problemId) {
   let testData = {
-    1: [1, 2, 3, 150],
-    2: [2, 4, 6, 130],
-    3: [5.4, 2.9, 8.3, 80],
+    testCase: {
+      1: "1\t2\n3",
+      2: "2\t4\n6",
+      3: "5.4\t2.9\n8.3",
+    },
+    timeout: 11000,
   };
   return testData;
 }
@@ -164,6 +201,18 @@ function retrieveExtension(languageId) {
       break;
     case "L102":
       return "py";
+      break;
+    default:
+      throw new Error("Language Not supported");
+  }
+}
+function retrieveSandbox(languageId) {
+  switch (languageId) {
+    case "L101":
+      return "java_sandbox";
+      break;
+    case "L102":
+      return "python_sandbox";
       break;
     default:
       throw new Error("Language Not supported");
