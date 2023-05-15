@@ -47,7 +47,7 @@ class Publisher {
       languageId: "L101",
       problemId: "P101",
       submission:
-        "public class Submission {public int solution(int a, int b) {return a+b;}}",
+        "package sourceCode; public class Submission {public int solution(int a, int b) {return a+b;}}",
     })
   );
   setTimeout(() => {

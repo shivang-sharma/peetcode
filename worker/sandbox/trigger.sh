@@ -12,6 +12,7 @@ testDataDir=$2
 submissionId=$3
 timeout=$4
 sandbox=$5
+problemId=$6
 containerIdFile=$submissionDir/$submissionId.container_id
 
 echo SUBMISSION_DIR:$submissionDir
@@ -20,7 +21,7 @@ echo SUBMISSION_ID:$submissionId
 echo TIMEOUT:$timeout
 echo CONTAINER_ID_FILE:$containerIdFile
 
-container_id=$(docker run -d --name $submissionId -v $submissionDir:/$sandbox/testEngine/submission -v $testDataDir:/$sandbox/testEngine/testData $sandbox)
+container_id=$(docker run -d --name $submissionId -v $submissionDir:/$sandbox/testEngine/submission -v $testDataDir:/$sandbox/testEngine/testData $sandbox ./execute.sh $problemId)
 echo $container_id > $containerIdFile
 echo CONTAINER_ID:$container_id
 exit_code=$(timeout $timeout docker wait $container_id || true)

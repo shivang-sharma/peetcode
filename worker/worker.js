@@ -74,7 +74,7 @@ async function jobHandler(job) {
   let sourceCodeFile = `Submission.${extension}`;
   let testDataFile = `testData.txt`;
   let submissionDir = __dirname + "/sandbox/temp/" + directoryName;
-  let sourceCodeDir = submissionDir + "/source-code/";
+  let sourceCodeDir = submissionDir + "/sourceCode/";
   let resultDir = submissionDir + "/result/";
   let testDataDir = __dirname + `/sandbox/temp/testData/${problemId}/`;
   await generateSubmissionFile(sourceCodeDir, sourceCodeFile, submission);
@@ -89,7 +89,8 @@ async function jobHandler(job) {
     testDataDir,
     submissionId,
     timeoutForProblem / 1000,
-    sandbox
+    sandbox,
+    problemId
   );
 }
 /**
@@ -105,11 +106,12 @@ function triggerJob(
   testDataDir,
   submissionId,
   timeout,
-  sandbox
+  sandbox,
+  problemId
 ) {
   const cmd =
     __dirname +
-    `/sandbox/trigger.sh ${submissionDir} ${testDataDir} ${submissionId} ${timeout} ${sandbox}| tee ${submissionDir}/output.${submissionId}`;
+    `/sandbox/trigger.sh ${submissionDir} ${testDataDir} ${submissionId} ${timeout} ${sandbox} ${problemId}| tee ${submissionDir}/executionLogs.${submissionId}`;
   exec(cmd);
 }
 /**
@@ -169,7 +171,7 @@ async function generateSubmissionFile(
 
 function retrieveTimeoutForProblem(problemId) {
   const timeouts = {
-    P101: 11000,
+    P101: 60000,
   };
   return timeouts[problemId];
 }
@@ -183,9 +185,9 @@ function retrieveTestData(problemId) {
     testCase: {
       1: "1\t2\n3",
       2: "2\t4\n6",
-      3: "5.4\t2.9\n8.3",
+      3: "5\t2\n7",
     },
-    timeout: 11000,
+    timeout: 60000,
   };
   return testData;
 }
