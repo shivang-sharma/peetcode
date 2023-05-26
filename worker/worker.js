@@ -171,7 +171,7 @@ async function generateSubmissionFile(
 
 function retrieveTimeoutForProblem(problemId) {
   const timeouts = {
-    P101: 60000,
+    P101: 100,
   };
   return timeouts[problemId];
 }
@@ -187,7 +187,7 @@ function retrieveTestData(problemId) {
       2: "2\t4\n6",
       3: "5\t2\n7",
     },
-    timeout: 60000,
+    timeout: 100,
   };
   return testData;
 }

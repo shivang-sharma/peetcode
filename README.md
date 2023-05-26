@@ -9,3 +9,9 @@ Demo: https://peetcode.com
 
 To build java_sandbox image
 docker build -t java_sandbox .
+
+To Start the mysql container on local machine
+docker run --name some-mysql -e MYSQL_ROOT_PASSWORD=peetcode_password -d mysql:latest
+
+To start the rabbitmq container on local machine
+docker run -d --hostname rabbit --name rabbit-server -p 8008:15672 -p 5672:5672 rabbitmq:3-management

@@ -32,7 +32,7 @@ io.on("connection", (socket) => {
 });
 
 function getTimeout(problemId) {
-  return 6000;
+  return 2000;
 }
 async function collectSubmissionResult(submissionId) {
   const submissionDir = `${__dirname}/sandbox/temp/${submissionId}`;

@@ -38,19 +38,25 @@ class Publisher {
     }
   }
 }
+const publisher = new Publisher("submissionQueue");
 (async () => {
-  const publisher = new Publisher("submissionQueue");
   await publisher.connect();
-  publisher.publish(
-    JSON.stringify({
-      submissionId: 1021,
-      languageId: "L101",
-      problemId: "P101",
-      submission:
-        "package sourceCode; public class Submission {public int solution(int a, int b) {return a+b;}}",
-    })
-  );
-  setTimeout(() => {
-    publisher.shutdown();
-  }, 1000);
+  console.log("Publisher connected ...");
 })();
+module.exports = publisher;
+// (async () => {
+//   const publisher = new Publisher("submissionQueue");
+//   await publisher.connect();
+//   publisher.publish(
+//     JSON.stringify({
+//       submissionId: 1021,
+//       languageId: "L101",
+//       problemId: "P101",
+//       submission:
+//         "package sourceCode; public class Submission {public int solution(int a, int b) {return a+b;}}",
+//     })
+//   );
+//   setTimeout(() => {
+//     publisher.shutdown();
+//   }, 1000);
+// })();
