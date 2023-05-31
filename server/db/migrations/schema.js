@@ -25,9 +25,9 @@ const problemSchema = `CREATE TABLE P_PROBLEM (
 const submissionSchema = `CREATE TABLE P_SUBMISSION (
     SUBMISSION_ID INTEGER AUTO_INCREMENT NOT NULL,
     SUBMISSION TEXT NOT NULL,
-    SUBMISSION_LANG_ID VARCHAR(5) NOT NULL,
+    SUBMISSION_LANG_ID INTEGER NOT NULL,
     SUBMISSION_STATUS ENUM('ACCEPTED', 'REJECTED'),
-    SUBMISSION_PROBLEM_ID VARCHAR(8) NOT NULL, 
+    SUBMISSION_PROBLEM_ID INTEGER NOT NULL, 
     SUBMISSION_RESULT TEXT,
     SUBMISSION_USER_ID INTEGER NOT NULL,
     PRIMARY KEY (SUBMISSION_ID),
@@ -35,9 +35,19 @@ const submissionSchema = `CREATE TABLE P_SUBMISSION (
     FOREIGN KEY (SUBMISSION_USER_ID) REFERENCES P_USER(USER_ID),
     FOREIGN KEY (SUBMISSION_LANG_ID) REFERENCES P_LANGUAGE(LANGUAGE_ID)
 );`;
+const schemaName = [
+    "P_SUBMISSION",
+    "P_PROBLEM",
+    "P_LANGUAGE",
+    "P_USER",
+
+]
 module.exports = {
-  userSchema: userSchema,
-  languageSchema: languageSchema,
-  problemSchema: problemSchema,
-  submissionSchema: submissionSchema,
+    schemas: [
+        userSchema,
+        languageSchema,
+        problemSchema,
+        submissionSchema,
+    ],
+    schemaNames: schemaName
 };
